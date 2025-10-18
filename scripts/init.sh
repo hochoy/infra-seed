@@ -123,6 +123,165 @@ echo "infra-seed Infrastructure Initialization"
 echo "=========================================="
 echo ""
 
+# Prerequisites Check
+echo -e "${BLUE}Prerequisites Check${NC}"
+echo ""
+
+MISSING_TOOLS=()
+OPTIONAL_TOOLS=()
+
+# Check required tools
+echo "Checking required tools..."
+
+if ! command -v gcloud &> /dev/null; then
+    MISSING_TOOLS+=("gcloud")
+    echo -e "${RED}✗ gcloud CLI not found${NC}"
+else
+    GCLOUD_VERSION=$(gcloud version --format="value(core)" 2>/dev/null || gcloud version 2>/dev/null | head -n1 | awk '{print $4}')
+    echo -e "${GREEN}✓ gcloud CLI installed${NC} (${GCLOUD_VERSION})"
+fi
+
+if ! command -v terraform &> /dev/null; then
+    MISSING_TOOLS+=("terraform")
+    echo -e "${RED}✗ terraform not found${NC}"
+else
+    TERRAFORM_VERSION=$(terraform version 2>/dev/null | head -n1 | sed 's/Terraform v//' | awk '{print $1}')
+    echo -e "${GREEN}✓ terraform installed${NC} (${TERRAFORM_VERSION})"
+fi
+
+if ! command -v gsutil &> /dev/null; then
+    MISSING_TOOLS+=("gsutil")
+    echo -e "${RED}✗ gsutil not found${NC}"
+else
+    GSUTIL_VERSION=$(gsutil version -l 2>/dev/null | head -n1 | awk '{print $3}')
+    echo -e "${GREEN}✓ gsutil installed${NC} (${GSUTIL_VERSION})"
+fi
+
+if ! command -v kubectl &> /dev/null; then
+    MISSING_TOOLS+=("kubectl")
+    echo -e "${RED}✗ kubectl not found${NC}"
+else
+    KUBECTL_VERSION=$(kubectl version --client 2>/dev/null | grep -o 'v[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*' | head -n1)
+    echo -e "${GREEN}✓ kubectl installed${NC} (${KUBECTL_VERSION})"
+fi
+
+# Check optional tools
+echo ""
+echo "Checking optional tools..."
+
+if ! command -v gh &> /dev/null; then
+    OPTIONAL_TOOLS+=("gh")
+    echo -e "${YELLOW}⚠ gh CLI not found (optional, but recommended for GitHub automation)${NC}"
+else
+    GH_VERSION=$(gh --version 2>/dev/null | head -n1 | awk '{print $3}')
+    echo -e "${GREEN}✓ gh CLI installed${NC} (${GH_VERSION})"
+fi
+
+if ! command -v curl &> /dev/null; then
+    OPTIONAL_TOOLS+=("curl")
+    echo -e "${YELLOW}⚠ curl not found (optional, used for API checks)${NC}"
+else
+    CURL_VERSION=$(curl --version 2>/dev/null | head -n1 | awk '{print $2}')
+    echo -e "${GREEN}✓ curl installed${NC} (${CURL_VERSION})"
+fi
+
+# Report missing required tools
+if [ ${#MISSING_TOOLS[@]} -gt 0 ]; then
+    echo ""
+    echo -e "${RED}================================${NC}"
+    echo -e "${RED}Missing Required Tools${NC}"
+    echo -e "${RED}================================${NC}"
+    echo ""
+    echo "The following required tools are missing:"
+    for tool in "${MISSING_TOOLS[@]}"; do
+        echo "  - $tool"
+    done
+    echo ""
+    echo "Installation instructions:"
+    echo ""
+    
+    if [[ " ${MISSING_TOOLS[@]} " =~ " gcloud " ]]; then
+        echo -e "${CYAN}gcloud CLI:${NC}"
+        echo "  macOS:   https://cloud.google.com/sdk/docs/install#mac"
+        echo "  Linux:   https://cloud.google.com/sdk/docs/install#linux"
+        echo "  Windows: https://cloud.google.com/sdk/docs/install#windows"
+        echo ""
+    fi
+    
+    if [[ " ${MISSING_TOOLS[@]} " =~ " terraform " ]]; then
+        echo -e "${CYAN}Terraform:${NC}"
+        echo "  macOS:   brew install terraform"
+        echo "  Linux:   https://developer.hashicorp.com/terraform/install"
+        echo "  Windows: https://developer.hashicorp.com/terraform/install"
+        echo ""
+    fi
+    
+    if [[ " ${MISSING_TOOLS[@]} " =~ " gsutil " ]]; then
+        echo -e "${CYAN}gsutil:${NC}"
+        echo "  Installed as part of gcloud SDK"
+        echo "  If gcloud is installed, run: gcloud components install gsutil"
+        echo ""
+    fi
+    
+    if [[ " ${MISSING_TOOLS[@]} " =~ " kubectl " ]]; then
+        echo -e "${CYAN}kubectl:${NC}"
+        echo "  macOS:   brew install kubectl"
+        echo "           or: gcloud components install kubectl"
+        echo "  Linux:   https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/"
+        echo "           or: gcloud components install kubectl"
+        echo "  Windows: https://kubernetes.io/docs/tasks/tools/install-kubectl-windows/"
+        echo "           or: gcloud components install kubectl"
+        echo ""
+    fi
+    
+    echo "Please install the missing tools and run this script again."
+    exit 1
+fi
+
+# Report optional tools
+if [ ${#OPTIONAL_TOOLS[@]} -gt 0 ]; then
+    echo ""
+    echo -e "${YELLOW}================================${NC}"
+    echo -e "${YELLOW}Optional Tools${NC}"
+    echo -e "${YELLOW}================================${NC}"
+    echo ""
+    echo "The following optional tools are not installed:"
+    for tool in "${OPTIONAL_TOOLS[@]}"; do
+        echo "  - $tool"
+    done
+    echo ""
+    echo "Installation instructions:"
+    echo ""
+    
+    if [[ " ${OPTIONAL_TOOLS[@]} " =~ " gh " ]]; then
+        echo -e "${CYAN}GitHub CLI (gh):${NC}"
+        echo "  macOS:   brew install gh"
+        echo "  Linux:   https://github.com/cli/cli#installation"
+        echo "  Windows: https://github.com/cli/cli#installation"
+        echo "  Note: Required for GitHub automation features"
+        echo ""
+    fi
+    
+    if [[ " ${OPTIONAL_TOOLS[@]} " =~ " curl " ]]; then
+        echo -e "${CYAN}curl:${NC}"
+        echo "  macOS:   (usually pre-installed)"
+        echo "  Linux:   sudo apt-get install curl (Debian/Ubuntu)"
+        echo "           sudo yum install curl (RHEL/CentOS)"
+        echo ""
+    fi
+    
+    read -p "Continue without optional tools? (y/n) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Setup cancelled. Install the optional tools and run this script again."
+        exit 1
+    fi
+fi
+
+echo ""
+echo -e "${GREEN}✓ All required tools are installed${NC}"
+echo ""
+
 # Step 1: Authenticate with Google Cloud
 echo -e "${BLUE}Step 1: Google Cloud Authentication${NC}"
 echo ""
@@ -752,43 +911,69 @@ if command -v gh &> /dev/null; then
         echo "Current token scopes: ${CURRENT_SCOPES}"
         echo ""
         
+        # Check for required scopes
+        MISSING_SCOPES=()
+        
+        # Check if repo scope is present
+        if echo "$CURRENT_SCOPES" | grep -q "repo"; then
+            echo -e "${GREEN}✓ Token has 'repo' scope (required for repository operations)${NC}"
+        else
+            echo -e "${YELLOW}⚠ Token missing 'repo' scope${NC}"
+            MISSING_SCOPES+=("repo")
+        fi
+        
         # Check if workflow scope is present
         if echo "$CURRENT_SCOPES" | grep -q "workflow"; then
-        echo -e "${GREEN}✓ Token has 'workflow' scope (required for .github/workflows/)${NC}"
-    else
-        echo -e "${YELLOW}⚠ Token missing 'workflow' scope${NC}"
-        echo ""
-        echo "The 'workflow' scope is required to create workflow files in .github/workflows/"
-        echo "without this scope, Terraform cannot create workflow files via GitHub API."
-        echo ""
-        echo "Current scopes: ${CURRENT_SCOPES}"
-        echo "Required scopes: repo, workflow, delete_repo (optional)"
-        echo ""
-        read -p "Add 'workflow' scope now? (y/n) " -n 1 -r
-        echo
-        
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            # Add workflow scope to current scopes
-            NEW_SCOPES="${CURRENT_SCOPES},workflow"
-            # Remove leading/trailing commas and spaces
-            NEW_SCOPES=$(echo "$NEW_SCOPES" | sed 's/^,//; s/,$//; s/ //g')
-            
-            if run_command "gh auth refresh --scopes \"$NEW_SCOPES\"" "Add workflow scope to GitHub token"; then
-                echo -e "${GREEN}✓ Workflow scope added${NC}"
-                
-                # Verify new scopes
-                UPDATED_SCOPES=$(gh auth token | xargs -I {} curl -s -H "Authorization: Bearer {}" https://api.github.com/users/$(gh api user -q .login) -I 2>/dev/null | grep -i "x-oauth-scopes:" | cut -d: -f2 | tr -d ' ')
-                echo "Updated scopes: ${UPDATED_SCOPES}"
-            else
-                echo -e "${YELLOW}⚠ Could not add workflow scope automatically${NC}"
-                echo "You can add it manually later with: gh auth refresh --scopes \"repo,workflow,delete_repo\""
-            fi
+            echo -e "${GREEN}✓ Token has 'workflow' scope (required for .github/workflows/)${NC}"
         else
-            echo -e "${YELLOW}⚠ Skipping workflow scope addition${NC}"
-            echo "Note: You'll need to add this scope manually to use GitHub automation features"
-            echo "Run: gh auth refresh --scopes \"repo,workflow,delete_repo\""
+            echo -e "${YELLOW}⚠ Token missing 'workflow' scope${NC}"
+            MISSING_SCOPES+=("workflow")
         fi
-    fi
+        
+        # If there are missing scopes, offer to add them
+        if [ ${#MISSING_SCOPES[@]} -gt 0 ]; then
+            echo ""
+            echo "The following scopes are required for GitHub automation:"
+            for scope in "${MISSING_SCOPES[@]}"; do
+                echo "  - $scope"
+            done
+            echo ""
+            echo "Current scopes: ${CURRENT_SCOPES}"
+            echo "Required scopes: repo, workflow"
+            echo "Optional scopes: delete_repo (for terraform destroy)"
+            echo ""
+            read -p "Add missing scopes now? (y/n) " -n 1 -r
+            echo
+            
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                # Build new scopes list
+                if [ -n "$CURRENT_SCOPES" ]; then
+                    NEW_SCOPES="$CURRENT_SCOPES"
+                    for scope in "${MISSING_SCOPES[@]}"; do
+                        NEW_SCOPES="${NEW_SCOPES},${scope}"
+                    done
+                else
+                    NEW_SCOPES=$(IFS=,; echo "${MISSING_SCOPES[*]}")
+                fi
+                # Remove leading/trailing commas and spaces
+                NEW_SCOPES=$(echo "$NEW_SCOPES" | sed 's/^,//; s/,$//; s/ //g')
+                
+                if run_command "gh auth refresh --scopes \"$NEW_SCOPES\"" "Add missing scopes to GitHub token"; then
+                    echo -e "${GREEN}✓ Scopes added${NC}"
+                    
+                    # Verify new scopes
+                    UPDATED_SCOPES=$(gh auth token | xargs -I {} curl -s -H "Authorization: Bearer {}" https://api.github.com/users/$(gh api user -q .login) -I 2>/dev/null | grep -i "x-oauth-scopes:" | cut -d: -f2 | tr -d ' ')
+                    echo "Updated scopes: ${UPDATED_SCOPES}"
+                else
+                    echo -e "${YELLOW}⚠ Could not add scopes automatically${NC}"
+                    echo "You can add them manually later with: gh auth refresh --scopes \"repo,workflow,delete_repo\""
+                fi
+            else
+                echo -e "${YELLOW}⚠ Skipping scope addition${NC}"
+                echo "Note: You'll need to add these scopes manually to use GitHub automation features"
+                echo "Run: gh auth refresh --scopes \"repo,workflow,delete_repo\""
+            fi
+        fi
     
     # Check for delete_repo scope (optional but helpful)
     echo ""
@@ -894,12 +1079,12 @@ echo -e "${YELLOW}For persistent access, add export commands to your shell profi
 
 echo ""
 
-# Step 10: Initialize and Plan Terraform
-echo -e "${BLUE}Step 10: Initialize and Plan Terraform${NC}"
+# Step 10: Initialize Terraform
+echo -e "${BLUE}Step 10: Initialize Terraform${NC}"
 echo ""
 
 echo "Initializing Terraform..."
-if run_command "cd terraform && terraform init --reconfigure" "Initialize Terraform with backend configuration"; then
+if run_command "(cd terraform && terraform init --reconfigure)" "Initialize Terraform with backend configuration"; then
     echo -e "${GREEN}✓ Terraform initialized${NC}"
 else
     echo -e "${RED}Failed to initialize Terraform${NC}"
@@ -907,11 +1092,61 @@ else
 fi
 
 echo ""
-echo "Creating Terraform execution plan..."
-if run_command "cd terraform && terraform plan -out=tfplan" "Create Terraform execution plan"; then
-    echo -e "${GREEN}✓ Terraform plan created (saved to terraform/tfplan)${NC}"
+
+# Step 11: Terraform Plan & Apply - Phase 1 (GKE Cluster)
+echo -e "${BLUE}Step 11: Phase 1 - Deploy GKE Cluster${NC}"
+echo ""
+echo "Creating plan for GKE cluster and node pool..."
+echo "(Deploying cluster first ensures Kubernetes provider can use kubernetes_manifest resources)"
+
+if run_command "(cd terraform && terraform plan -target=google_container_cluster.primary -target=google_container_node_pool.primary_nodes -out=tfplan-phase1)" "Create Terraform plan for GKE cluster"; then
+    echo -e "${GREEN}✓ Phase 1 plan created (saved to terraform/tfplan-phase1)${NC}"
 else
-    echo -e "${RED}Failed to create Terraform plan${NC}"
+    echo -e "${RED}Failed to create Phase 1 plan${NC}"
+    exit 1
+fi
+
+echo ""
+echo "Applying Phase 1 plan..."
+if run_command "(cd terraform && terraform apply tfplan-phase1)" "Deploy GKE cluster and node pool"; then
+    echo -e "${GREEN}✓ GKE cluster deployed${NC}"
+else
+    echo -e "${RED}Failed to deploy GKE cluster${NC}"
+    echo "You may need to manually run: cd terraform && terraform apply -target=google_container_node_pool.primary_nodes"
+    exit 1
+fi
+
+echo ""
+echo "Fetching cluster credentials for kubectl..."
+if run_command "gcloud container clusters get-credentials ${TF_CLUSTER_NAME} --region=${TF_REGION} --project=${TF_PROJECT_ID}" "Get GKE cluster credentials"; then
+    echo -e "${GREEN}✓ Cluster credentials configured${NC}"
+else
+    echo -e "${YELLOW}⚠ Failed to get cluster credentials${NC}"
+    echo "You may need to manually run: gcloud container clusters get-credentials ${TF_CLUSTER_NAME} --region=${TF_REGION}"
+    echo "Continuing anyway..."
+fi
+
+echo ""
+
+# Step 12: Terraform Plan & Apply - Phase 2 (Remaining Infrastructure)
+echo -e "${BLUE}Step 12: Phase 2 - Deploy Remaining Infrastructure${NC}"
+echo ""
+echo "Creating plan for remaining infrastructure (Kubernetes resources, Cloudflare DNS, etc.)..."
+
+if run_command "(cd terraform && terraform plan -out=tfplan-phase2)" "Create Terraform plan for remaining infrastructure"; then
+    echo -e "${GREEN}✓ Phase 2 plan created (saved to terraform/tfplan-phase2)${NC}"
+else
+    echo -e "${RED}Failed to create Phase 2 plan${NC}"
+    exit 1
+fi
+
+echo ""
+echo "Applying Phase 2 plan..."
+if run_command "(cd terraform && terraform apply tfplan-phase2)" "Deploy all remaining infrastructure"; then
+    echo -e "${GREEN}✓ Infrastructure deployed${NC}"
+else
+    echo -e "${RED}Failed to deploy infrastructure${NC}"
+    echo "You may need to manually run: cd terraform && terraform apply"
     exit 1
 fi
 
@@ -920,21 +1155,24 @@ echo "📝 Command Log:"
 echo -e "   All executed commands have been saved to: ${YELLOW}$LOG_FILE${NC}"
 echo "   You can review or re-run these commands manually if needed."
 echo ""
-echo "🚀 Ready for Terraform deployment!"
+echo "🎉 Infrastructure deployment complete!"
 echo ""
-echo "Next Steps (2-step deployment to avoid Kubernetes provider issues):"
+echo "Next Steps:"
 echo ""
-echo "  1. Authenticate"
-echo "     sh ./scripts/auth.sh"
+echo "  1. Test your deployment:"
+echo "     sh ./scripts/test.sh"
 echo ""
-echo "  2. Deploy cluster and infrastructure first"
-echo "     cd terraform/"
-echo "     terraform apply -target=google_container_node_pool.primary_nodes"
+echo "  2. Monitor deployment status:"
+echo "     sh ./scripts/monitor.sh"
 echo ""
-echo "  3. Deploy Kubernetes resources:"
-echo "     terraform apply"
-echo ""
-echo "  4. If you open a new terminal session, authenticate again"
+echo "  3. For subsequent infrastructure changes:"
+echo "  3. For subsequent infrastructure changes (after this initial setup):"
+echo "     - Edit terraform/*.tf files as needed"
+echo "     - sh ./scripts/auth.sh"
+echo "     - cd terraform/"
+echo "     - terraform plan"
+echo "     - terraform apply"
+echo "     (No need to re-run this init.sh script for future changes)"
 echo ""
 
 # Write completion section to log file
@@ -947,21 +1185,25 @@ Setup Complete!
    All executed commands have been saved to: init.log
    You can review or re-run these commands manually if needed.
 
-🚀 Ready for Terraform deployment!
+🚀 Initial Terraform deployment complete!
 
-Next Steps (2-step deployment to avoid Kubernetes provider issues):
+Next Steps:
 
-    1. Authenticate
-        sh ./scripts/auth.sh
+    1. Test your deployment:
+        sh ./scripts/test.sh
 
-    2. Deploy cluster and infrastructure first
-        cd terraform/
-        terraform apply -target=google_container_node_pool.primary_nodes
+    2. Monitor deployment status:
+        sh ./scripts/monitor.sh
 
-    3. Deploy Kubernetes resources:
-        terraform apply
+    3. For subsequent infrastructure changes (after this initial setup):
+        - Edit terraform/*.tf files as needed
+        - sh ./scripts/auth.sh
+        - cd terraform/
+        - terraform plan
+        - terraform apply
+        (No need to re-run this init.sh script for future changes)
 
-    4. If you open a new terminal session, authenticate again
+    4. If you open a new terminal session, authenticate again:
         sh ./scripts/auth.sh
 
 EOF

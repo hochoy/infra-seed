@@ -33,7 +33,7 @@ terraform/*.log
 .terraform.tfstate.lock.info
 terraform.tfstate
 terraform.tfstate*
-tfplan
+tfplan*
 
 # Google Cloud credentials
 *.json

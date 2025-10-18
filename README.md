@@ -223,36 +223,13 @@ Tools:
 
 ### Initialization
 
-Initialization is done as a 3-step process:
-
-**Environment setup**:
-
-The init.sh script performs initial project setup:
-1. Authenticates with Google Cloud and creates/configures your GCP project
-2. Generates a `terraform.tfvars` file with smart defaults for your review before deploying anything
+The `init.sh` script performs complete infrastructure setup and deployment in a single run:
 
 ```bash
 # Clone the repository
 git clone git@github.com:hochoy/infra-seed.git
 cd infra-seed
 ./scripts/init.sh
-```
-
-**Deploy cluster only**:
-
-This step ensures the Kubernetes provider in Terraform can use the `kubernetes_manifest` resources by requiring the cluster to exist first
-
-```bash
-sh ./scripts/auth.sh
-cd terraform/
-terraform apply -target=google_container_node_pool.primary_nodes -auto-approve
-```
-**Deploy all remaining infrastructure**:
-
-```bash
-sh ./scripts/auth.sh
-cd terraform/
-terraform apply -auto-approve
 ```
 
 **What init.sh does for you:**
@@ -262,7 +239,28 @@ terraform apply -auto-approve
 - ✅ Cloudflare API token storage (Secret Manager)
 - ✅ Terraform backend setup (GCS bucket)
 - ✅ terraform.tfvars generation with smart defaults
+- ✅ **Terraform initialization** (`terraform init`)
+- ✅ **Infrastructure deployment** (GKE cluster, Kubernetes resources, Cloudflare DNS)
 - ✅ Logs all commands to init.log for review
+
+The script uses a 2-step Terraform deployment strategy to avoid Kubernetes provider issues:
+1. First deploys the GKE cluster and node pool
+2. Then deploys all remaining infrastructure (Kubernetes resources, DNS, etc.)
+
+**For subsequent infrastructure modifications:**
+
+After the initial deployment, you can make changes to your infrastructure by editing the Terraform files and applying them:
+
+```bash
+# Authenticate (if starting a new shell session)
+sh ./scripts/auth.sh
+
+# Make your changes to terraform/*.tf files
+# Then apply them:
+cd terraform/
+terraform plan    # Review changes
+terraform apply   # Apply changes
+```
 
 
 ### Test the infrastructure
