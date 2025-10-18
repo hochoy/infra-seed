@@ -1,0 +1,83 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Load Configuration
+        id: config
+        run: |
+          # Install yq (Go version from mikefarah/yq, not the Python version)
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+          
+          echo "Loading configuration from github.yaml"
+          echo "GCP_PROJECT_ID=$(yq eval '.gcp.project_id' github.yaml)" >> $GITHUB_OUTPUT
+          echo "GCP_REGION=$(yq eval '.gcp.region' github.yaml)" >> $GITHUB_OUTPUT
+          echo "GKE_CLUSTER=$(yq eval '.gcp.cluster_name' github.yaml)" >> $GITHUB_OUTPUT
+          echo "GCP_SERVICE_ACCOUNT=$(yq eval '.gcp.service_account' github.yaml)" >> $GITHUB_OUTPUT
+          echo "REGISTRY_URL=$(yq eval '.registry.url' github.yaml)" >> $GITHUB_OUTPUT
+          echo "IMAGE_NAME=$(yq eval '.registry.image_name' github.yaml)" >> $GITHUB_OUTPUT
+          echo "WIF_PROVIDER=$(yq eval '.workload_identity.provider' github.yaml)" >> $GITHUB_OUTPUT
+          echo "K8S_NAMESPACE=$(yq eval '.kubernetes.namespace' github.yaml)" >> $GITHUB_OUTPUT
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ steps.config.outputs.WIF_PROVIDER }}
+          service_account: ${{ steps.config.outputs.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Install gke-gcloud-auth-plugin
+        run: |
+          gcloud components install gke-gcloud-auth-plugin
+
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker ${{ steps.config.outputs.GCP_REGION }}-docker.pkg.dev
+
+      - name: Build and Push Image
+        run: |
+          IMAGE_TAG="${{ steps.config.outputs.REGISTRY_URL }}/${{ steps.config.outputs.IMAGE_NAME }}:${{ github.sha }}"
+          docker build -t $IMAGE_TAG .
+          docker push $IMAGE_TAG
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+
+      - name: Get GKE Credentials
+        run: |
+          gcloud container clusters get-credentials ${{ steps.config.outputs.GKE_CLUSTER }} \
+            --region=${{ steps.config.outputs.GCP_REGION }} \
+            --project=${{ steps.config.outputs.GCP_PROJECT_ID }}
+
+      - name: Deploy to GKE
+        run: |
+          # Replace SERVICE_NAME placeholder with actual service name
+          sed -i "s|SERVICE_NAME|${{ steps.config.outputs.IMAGE_NAME }}|g" deployment.yaml
+          sed -i "s|SERVICE_NAME|${{ steps.config.outputs.IMAGE_NAME }}|g" service.yaml
+          
+          # Update deployment.yaml with new image
+          sed -i "s|image:.*|image: ${{ env.IMAGE_TAG }}|g" deployment.yaml
+          
+          # Apply deployment and service manifests (creates if not exists, updates if exists)
+          kubectl apply -f deployment.yaml -n ${{ steps.config.outputs.K8S_NAMESPACE }}
+          kubectl apply -f service.yaml -n ${{ steps.config.outputs.K8S_NAMESPACE }}
+          
+          # Wait for rollout to complete
+          kubectl rollout status deployment/${{ steps.config.outputs.IMAGE_NAME }}-deployment \
+            -n ${{ steps.config.outputs.K8S_NAMESPACE }} \
+            --timeout=5m

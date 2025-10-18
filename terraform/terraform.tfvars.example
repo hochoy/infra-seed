@@ -1,0 +1,40 @@
+# Example Terraform variables file
+# Copy this to terraform.tfvars and fill in your values
+
+# Your GCP project ID (required)
+project_id = "your-gcp-project-id"
+
+# GCP region (optional, defaults to us-central1)
+region = "us-central1"
+
+# GKE cluster name (optional, defaults to infra-seed-cluster)
+gke_cluster_name = "infra-seed-cluster"
+
+# Artifact Registry repository name (optional, defaults to infra-seed-registry)
+artifact_registry_name = "infra-seed-registry"
+
+# Your GitHub username or organization (required)
+github_owner = "your-github-username"
+
+# GitHub Personal Access Token for creating repositories (required for GitHub automation)
+# Set via environment variable: export GITHUB_TOKEN="ghp_xxxxxxxxxxxxx"
+# Scopes needed: repo, workflow, admin:repo_hook
+# github_token = "ghp_xxxxxxxxxxxxx"  # DON'T commit this!
+
+# Your GitHub repository name for the monorepo (optional, defaults to infra-seed)
+github_repo_name = "infra-seed"
+
+# Your domain name (required for ingress setup)
+domain_name = "example.com"
+
+# Enable Cloudflare proxy (orange cloud) - recommended: false for initial setup
+cloudflare_proxy_enabled = false
+
+# Enable API subdomain (api.yourdomain.com)
+enable_api_subdomain = true
+
+# SSL Certificate Lifecycle Management
+# DEPLOYMENT PHASES:
+# Phase 1: Set to false for initial deployment (HTTP-only load balancer)
+# Phase 2: Set to true after SSL certificate is provisioned (enables HTTPS)
+ssl_certificate_ready = false
