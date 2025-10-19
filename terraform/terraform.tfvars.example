@@ -32,9 +32,3 @@ cloudflare_proxy_enabled = false
 
 # Enable API subdomain (api.yourdomain.com)
 enable_api_subdomain = true
-
-# SSL Certificate Lifecycle Management
-# DEPLOYMENT PHASES:
-# Phase 1: Set to false for initial deployment (HTTP-only load balancer)
-# Phase 2: Set to true after SSL certificate is provisioned (enables HTTPS)
-ssl_certificate_ready = false
