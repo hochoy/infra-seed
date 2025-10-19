@@ -166,7 +166,89 @@ resource "github_repository_file" "github_config" {
   ]
 }
 
-# Add src/app.py to service repositories
+# Add all template files to service repositories explicitly
+# (Template repositories sometimes have timing issues, so we ensure all files are present)
+
+resource "github_repository_file" "service_dockerfile" {
+  for_each = local.namespaces
+
+  repository = github_repository.service[each.key].name
+  branch     = "main"
+  file       = "Dockerfile"
+  content    = file("${path.module}/templates/service/Dockerfile")
+
+  commit_message      = "Add Dockerfile"
+  commit_author       = "Terraform"
+  commit_email        = "terraform@infra-seed.local"
+  overwrite_on_create = true
+
+  depends_on = [github_repository.service]
+}
+
+resource "github_repository_file" "service_requirements" {
+  for_each = local.namespaces
+
+  repository = github_repository.service[each.key].name
+  branch     = "main"
+  file       = "requirements.txt"
+  content    = file("${path.module}/templates/service/requirements.txt")
+
+  commit_message      = "Add requirements.txt"
+  commit_author       = "Terraform"
+  commit_email        = "terraform@infra-seed.local"
+  overwrite_on_create = true
+
+  depends_on = [github_repository.service]
+}
+
+resource "github_repository_file" "service_deployment" {
+  for_each = local.namespaces
+
+  repository = github_repository.service[each.key].name
+  branch     = "main"
+  file       = "deployment.yaml"
+  content    = file("${path.module}/templates/service/deployment.yaml")
+
+  commit_message      = "Add deployment.yaml"
+  commit_author       = "Terraform"
+  commit_email        = "terraform@infra-seed.local"
+  overwrite_on_create = true
+
+  depends_on = [github_repository.service]
+}
+
+resource "github_repository_file" "service_service_yaml" {
+  for_each = local.namespaces
+
+  repository = github_repository.service[each.key].name
+  branch     = "main"
+  file       = "service.yaml"
+  content    = file("${path.module}/templates/service/service.yaml")
+
+  commit_message      = "Add service.yaml"
+  commit_author       = "Terraform"
+  commit_email        = "terraform@infra-seed.local"
+  overwrite_on_create = true
+
+  depends_on = [github_repository.service]
+}
+
+resource "github_repository_file" "service_readme" {
+  for_each = local.namespaces
+
+  repository = github_repository.service[each.key].name
+  branch     = "main"
+  file       = "README.md"
+  content    = file("${path.module}/templates/service/README.md")
+
+  commit_message      = "Add README.md"
+  commit_author       = "Terraform"
+  commit_email        = "terraform@infra-seed.local"
+  overwrite_on_create = true
+
+  depends_on = [github_repository.service]
+}
+
 resource "github_repository_file" "service_app" {
   for_each = local.namespaces
 
@@ -183,7 +265,6 @@ resource "github_repository_file" "service_app" {
   depends_on = [github_repository.service]
 }
 
-# Add GitHub Actions workflow to service repositories
 resource "github_repository_file" "service_workflow" {
   for_each = local.namespaces
 

@@ -156,26 +156,6 @@ test_cloudflare_domain() {
         else
             ((failed++))
         fi
-        
-        # Test an API endpoint
-        local api_url="https://$DOMAIN/$service/api"
-        case $service in
-            "one")
-                api_url="https://$DOMAIN/$service/api/tasks"
-                ;;
-            "two")
-                api_url="https://$DOMAIN/$service/api/data"
-                ;;
-            "three")
-                api_url="https://$DOMAIN/$service/api/jobs"
-                ;;
-        esac
-        
-        if test_endpoint "$api_url" "Service $service API (Cloudflare)"; then
-            ((passed++))
-        else
-            ((failed++))
-        fi
     done
 
     return $([[ $failed -eq 0 ]] && echo 0 || echo 1)

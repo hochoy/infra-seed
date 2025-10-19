@@ -33,68 +33,68 @@ This project provides a complete infrastructure-as-code solution for deploying a
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         User Request                             │
+│                         User Request                            │
 └────────────────────────┬────────────────────────────────────────┘
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Cloudflare (DNS + DDoS)                       │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │     DNS      │  │  Proxy/WAF   │  │  Origin CA   │          │
-│  └──────────────┘  └──────────────┘  └──────────────┘          │
+│                    Cloudflare (DNS + DDoS)                      │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐           │
+│  │     DNS      │  │  Proxy/WAF   │  │  Origin CA   │           │
+│  └──────────────┘  └──────────────┘  └──────────────┘           │
 └────────────────────────┬────────────────────────────────────────┘
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                   Google Cloud Platform                          │
-│                                                                   │
+│                   Google Cloud Platform                         │
+│                                                                 │
 │  ┌────────────────────────────────────────────────────────────┐ │
 │  │              HTTPS Load Balancer + SSL                     │ │
-│  │  ┌──────────┐  ┌──────────┐  ┌────────────┐              │ │
-│  │  │ Static IP│  │ SSL Cert │  │ Health Chk │              │ │
-│  │  └──────────┘  └──────────┘  └────────────┘              │ │
+│  │  ┌──────────┐  ┌──────────┐  ┌────────────┐                │ │
+│  │  │ Static IP│  │ SSL Cert │  │ Health Chk │                │ │
+│  │  └──────────┘  └──────────┘  └────────────┘                │ │
 │  └─────────────────────┬──────────────────────────────────────┘ │
-│                        │                                          │
+│                        │                                        │
 │  ┌─────────────────────▼──────────────────────────────────────┐ │
 │  │              GKE Cluster (Regional)                        │ │
-│  │                                                             │ │
-│  │  ┌──────────────────────────────────────────────────────┐ │ │
-│  │  │         Gateway API (GKE Gateway Controller)        │ │ │
-│  │  │  ┌──────────┐  ┌──────────┐  ┌────────────┐       │ │ │
-│  │  │  │ Gateway  │  │HTTPRoutes│  │ BackendPol │       │ │ │
-│  │  │  └──────────┘  └──────────┘  └────────────┘       │ │ │
-│  │  └───────────────────┬──────────────────────────────────┘ │ │
+│  │                                                            │ │
+│  │  ┌──────────────────────────────────────────────────────┐  │ │
+│  │  │         Gateway API (GKE Gateway Controller)         │  │ │
+│  │  │  ┌──────────┐  ┌──────────┐  ┌────────────┐          │  │ │
+│  │  │  │ Gateway  │  │HTTPRoutes│  │ BackendPol │          │  │ │
+│  │  │  └──────────┘  └──────────┘  └────────────┘          │  │ │
+│  │  └───────────────────┬──────────────────────────────────┘  │ │
 │  │                      │                                     │ │
-│  │  ┌───────────────────▼──────────────────────────────────┐ │ │
-│  │  │           Isolated Namespaces                       │ │ │
-│  │  │                                                      │ │ │
-│  │  │  ┌─────────────┐  ┌─────────────┐  ┌────────────┐ │ │ │
-│  │  │  │ service-one │  │ service-two │  │ service-...│ │ │ │
-│  │  │  │             │  │             │  │            │ │ │ │
-│  │  │  │ • Pods      │  │ • Pods      │  │ • Pods     │ │ │ │
-│  │  │  │ • Services  │  │ • Services  │  │ • Services │ │ │ │
-│  │  │  │ • RBAC      │  │ • RBAC      │  │ • RBAC     │ │ │ │
-│  │  │  │ • Quotas    │  │ • Quotas    │  │ • Quotas   │ │ │ │
-│  │  │  │ • NetPol    │  │ • NetPol    │  │ • NetPol   │ │ │ │
-│  │  │  └─────────────┘  └─────────────┘  └────────────┘ │ │ │
-│  │  └──────────────────────────────────────────────────────┘ │ │
-│  └─────────────────────────────────────────────────────────────┘ │
-│                                                                   │
-│  ┌─────────────────────────────────────────────────────────────┐ │
-│  │          Supporting Infrastructure                          │ │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌────────────┐       │ │
-│  │  │ Artifact Reg │  │  VPC Network │  │ Secret Mgr │       │ │
-│  │  └──────────────┘  └──────────────┘  └────────────┘       │ │
-│  └─────────────────────────────────────────────────────────────┘ │
-└───────────────────────────────────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      GitHub Actions CI/CD                        │
+│  │  ┌───────────────────▼──────────────────────────────────┐  │ │
+│  │  │           Isolated Namespaces                        │  │ │
+│  │  │                                                      │  │ │
+│  │  │  ┌─────────────┐  ┌─────────────┐  ┌────────────┐    │  │ │
+│  │  │  │ service-one │  │ service-two │  │ service-...│    │  │ │
+│  │  │  │             │  │             │  │            │    │  │ │
+│  │  │  │ • Pods      │  │ • Pods      │  │ • Pods     │    │  │ │
+│  │  │  │ • Services  │  │ • Services  │  │ • Services │    │  │ │
+│  │  │  │ • RBAC      │  │ • RBAC      │  │ • RBAC     │    │  │ │
+│  │  │  │ • Quotas    │  │ • Quotas    │  │ • Quotas   │    │  │ │
+│  │  │  │ • NetPol    │  │ • NetPol    │  │ • NetPol   │    │  │ │
+│  │  │  └─────────────┘  └─────────────┘  └────────────┘    │  │ │
+│  │  └──────────────────────────────────────────────────────┘  │ │
+│  └────────────────────────────────────────────────────────────┘ │
+│                                                                 │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │          Supporting Infrastructure                         │ │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌────────────┐        │ │
+│  │  │ Artifact Reg │  │  VPC Network │  │ Secret Mgr │        │ │
+│  │  └──────────────┘  └──────────────┘  └────────────┘        │ │
+│  └────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+                              ▲
+                              |
+┌────────────────────────────────────────────────────────────────┐
+│                      GitHub Actions CI/CD                      │
 │  ┌──────────────┐  ┌──────────────┐  ┌────────────┐            │
 │  │  WIF Auth    │  │ Build/Push   │  │   Deploy   │            │
 │  └──────────────┘  └──────────────┘  └────────────┘            │
-└─────────────────────────────────────────────────────────────────┘
+└────────────────────────────────────────────────────────────────┘
 ```
 
 ### Key Components
@@ -136,7 +136,7 @@ This project provides a complete infrastructure-as-code solution for deploying a
 infra-seed/
 ├── scripts/
 │   ├── init.sh          # Initial setup: GCP project, billing, Cloudflare, Terraform backend
-│   ├── auth.sh          # Authenticate with GCP for Terraform operations
+│   ├── auth.sh          # Authenticate with GCP, Cloudflare and Github for Terraform operations
 │   ├── test.sh          # Test deployed services (DNS, load balancer, endpoints)
 │   └── monitor.sh       # Monitor deployment status and networking milestones
 │
@@ -239,8 +239,8 @@ cd infra-seed
 - ✅ Cloudflare API token storage (Secret Manager)
 - ✅ Terraform backend setup (GCS bucket)
 - ✅ terraform.tfvars generation with smart defaults
-- ✅ **Terraform initialization** (`terraform init`)
-- ✅ **Infrastructure deployment** (GKE cluster, Kubernetes resources, Cloudflare DNS)
+- ✅ Terraform initialization (`terraform init`)
+- ✅ Infrastructure deployment (GKE cluster, Kubernetes resources, Cloudflare DNS)
 - ✅ Logs all commands to init.log for review
 
 The script uses a 2-step Terraform deployment strategy to avoid Kubernetes provider issues:
@@ -262,24 +262,42 @@ terraform plan    # Review changes
 terraform apply   # Apply changes
 ```
 
-
 ### Test the infrastructure
+
+After deploying your infrastructure, it's important to verify that all components are properly configured and operational.
+
+#### Step 1: Monitor deployment status
+
+First, run the monitoring script to check the Gateway and HTTPRoute deployment status:
+
+```bash
+sh ./scripts/monitor.sh
+```
+
+This script checks:
+- **Gateway Status**: Verifies the Gateway is programmed and has an IP address
+- **HTTPRoute Configuration**: Confirms all routes are accepted and configured
+- **Pod Health**: Shows running pods across all service namespaces
+- **Network Endpoint Groups (NEGs)**: Confirms NEGs are created for each service
+- **Backend Health**: Displays health status of backend services
+
+#### Step 2: Test service accessibility
+
+Once `monitor.sh` shows all components are healthy (Gateway programmed, routes accepted, backends healthy), run the testing script:
 
 ```bash
 sh ./scripts/test.sh
 ```
 
-The script tests:
+This script tests:
 - **DNS Resolution**: Verifies domain resolves correctly
 - **GCP Load Balancer**: Direct IP access with proper Host headers
 - **Cloudflare Domain**: HTTPS endpoints through Cloudflare proxy
 - **Health Checks**: Service health endpoints
-- **API Endpoints**: Service-specific API routes
 
-Example output:
+Example output when services are fully operational:
 ```
 🚀 infra-seed Service Testing Script
-==================================
 [INFO] === Checking Prerequisites ===
 ✅ kubectl is installed
 ✅ curl is installed
@@ -289,13 +307,11 @@ Example output:
 ✅ Gateway infra-seed-main-gateway exists
 ✅ Gateway has IP address assigned: 34.149.233.235
 [INFO] === Testing GCP Load Balancer Direct IP ===
-✅ curl -H 'Host: hundred.sh' 'http://34.149.233.235/one' → HTTP 200 | {"endpoints":["GET /","GET /health"...
+✅ curl -H 'Host: hundred.sh' 'http://34.149.233.235/one' → HTTP 200 | {"service":"SERVICE_NAME","status":"running"...
 ```
 
-If any tests fail, this script checks for the status of each networking milestone. 
-```bash
-sh ./scripts/monitor.sh
-```
+**Important:** During initial deployment, you may see "fault filter abort" errors when accessing your services. This is expected behavior while the Gateway is initializing and configuring HTTPRoutes. According to [Google's Gateway API documentation](https://cloud.google.com/kubernetes-engine/docs/how-to/deploying-multi-cluster-gateways), this message appears before HTTPRoutes are fully configured and health checks pass.
+
 
 There is often a delay in DNS propagation or load balancer setup, so re-running the script after a few minutes is recommended.
 
@@ -423,77 +439,11 @@ git push
 
 ### Add and deploy a new service to existing namespace
 
-If you want to add an additional service to an existing namespace (instead of creating a new namespace):
+Currently, to keep the terraform module simple, each namespace is designed to host a single service.
 
-1. **Clone the namespace's GitHub repository**:
-
-```bash
-gh repo clone <owner>/<namespace-name>
-cd <namespace-name>
-```
-
-2. **Create a new service subdirectory** (optional, for organizing multiple services):
-
-```bash
-mkdir services/my-second-app
-cp -r src services/my-second-app/
-# Customize the code
-```
-
-3. **Add new Kubernetes manifests**:
-
-```bash
-# Create deployment for the new service
-kubectl create deployment my-second-app \
-  --image=us-central1-docker.pkg.dev/PROJECT_ID/REPO/my-second-app:latest \
-  --dry-run=client -o yaml > deployment-second.yaml
-
-# Create service
-kubectl create service clusterip my-second-app-service \
-  --tcp=80:8080 \
-  --dry-run=client -o yaml > service-second.yaml
-```
-
-4. **Update routing** in `terraform/namespaces.tf` to add the new path:
-
-```hcl
-"existing-namespace" = {
-  # ... existing config ...
-  routing = {
-    enabled        = true
-    path_prefix    = "/app1"  # Existing service
-    service_name   = "app1-service"
-    service_port   = 80
-    url_rewrite    = true
-    rewrite_target = "/"
-  }
-}
-
-# Add new entry for second service
-"existing-namespace-app2" = {
-  # ... same administrators/viewers ...
-  routing = {
-    enabled        = true
-    path_prefix    = "/app2"  # New service
-    service_name   = "my-second-app-service"
-    service_port   = 80
-    url_rewrite    = true
-    rewrite_target = "/"
-  }
-}
-```
-
-5. **Apply changes** and deploy:
-
-```bash
-# Apply Terraform for routing updates
-cd terraform/
-terraform apply
-
-# Deploy new service manually or via CI/CD
-kubectl apply -f deployment-second.yaml -n existing-namespace
-kubectl apply -f service-second.yaml -n existing-namespace
-```
+In the future, we could either:
+- Enhance the module to support multiple services per namespace
+- Decouple service and gateway route deployment from namespace creation
 
 ### Add a new administrator/viewer to existing namespace
 
